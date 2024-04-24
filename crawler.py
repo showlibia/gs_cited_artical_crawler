@@ -1,91 +1,84 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.proxy import Proxy, ProxyType
-from bs4 import BeautifulSoup
-import requests
+import sys
 import json
-import time
-import random
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from urllib.parse import quote_plus
+from details import extract_citation_text
+from click import access_article, random_sleep, find_next_page_button, close_citation_modal
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # 配置 WebDriver
 chrome_driver_path = "D:\chromedriver-win64\chromedriver.exe"
 service = Service(executable_path=chrome_driver_path)
 driver = webdriver.Chrome(service=service)
 
-def random_sleep(minimum, maximum):
-    """生成随机延时以模仿用户行为"""
-    time.sleep(random.uniform(minimum, maximum))
-
-def access_article(article_url):
-    """访问指定的 Google Scholar 文章页面，并点击“被引用次数”"""
-    driver.get(article_url)
-
-    if check_for_captcha():
-        manual_verification_needed()
-
-    # 点击“被引用次数”
-    cited_by = driver.find_element(By.XPATH,'//div[@class="gs_ri"]/div[@class="gs_fl gs_flb"]/a[contains(text(), "被引用次数")]')
-    cited_by.click()
-
-    # 等待页面加载
-    random_sleep(2, 5)
-
-def parse_articles():
+def parse_articles(driver, results, article_count):
     """解析文章数据并保存"""
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
     articles = soup.select('#gs_res_ccl_mid .gs_ri')
-    results = []
 
     for article in articles:
         title = article.select_one('.gs_rt').text
-        author_info = article.select_one('.gs_a').text
-        results.append({
-            'title': title,
-            'author_info': author_info
-        })
+        
+        # Wait for any potential overlays to disappear
+        wait = WebDriverWait(driver, 10)
+        cite_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.gs_or_cit.gs_or_btn.gs_nph')))
+        
+        # Execute JavaScript click
+        driver.execute_script("arguments[0].click();", cite_button)
 
-    # 保存结果到 txt 文件
-    with open('cited_articles.txt', 'a') as f:
-        json.dump(results, f, indent=4)
+        # Extract citation in GB/T 7714 format
+        try:
+            # Ensure the citation modal is fully loaded
+            citation_text, authors, platform, year = extract_citation_text(driver)
+        except Exception as e:
+            print(f"Failed to extract citation: {e}")
+            citation_text = "Citation extraction failed."
+
+        # Close the citation modal if needed
+        close_citation_modal(driver)
+
+         # Compile results using a unique key
+        results[f'article_{article_count}'] = {
+            'title': title,
+            'citation': citation_text,
+            'authors': authors,
+            'platform': platform,
+            'year': year
+        }
+        article_count += 1  # Increment the counter for the next entry
 
     # 查找并点击下一页
-    
-    next_page_button = find_next_page_button()
+    next_page_button = find_next_page_button(driver)
     if next_page_button:
         next_page_button.click()
         random_sleep(2, 5)  # 随机延时，模仿用户行为
-        parse_articles()
+        parse_articles(results, article_count)
     else:
-        print("已达到最后一页或未找到下一页按钮。")
+        print("Reached the last page or no next page button found.")
 
-def find_next_page_button():
-    """尝试找到并返回‘下一页’按钮的 WebElement"""
-    try:
-        return driver.find_element(By.XPATH, "//div[@id='gs_bdy']/div[@id='gs_bdy_ccl']/div[@id='gs_res_ccl']/div[@id='gs_res_ccl_bot']/div[@id='gs_n']/center/table/tbody/tr/td[@align='left']/a")
-    except Exception as e:
-        print(f"查找下一页按钮时发生错误: {e}")
-        return None
 
-def check_for_captcha():
-    """检查页面是否有验证码"""
-    try:
-        captcha = driver.find_element(By.ID, "captcha")
-        return captcha is not None
-    except:
-        return False
-
-def manual_verification_needed():
-    """需要人工介入时的操作"""
-    print("检测到验证码，请进行人工验证，并在完成后按回车键继续。")
-    input()  # 等待用户按回车键
 
 def main():
-    article_url = "https://scholar.google.com/scholar?hl=zh-CN&as_sdt=0%2C5&q=Defeating+hidden+audio+channel+attacks+on+voice+assistants+via+audio-induced+surface+vibrations&btnG="
-    access_article(article_url)
-    parse_articles()
+    if len(sys.argv) < 2:
+        print("No article name provided. Usage: script.py '<Article Name>'")
+        return
+    
+    article_name = sys.argv[1]
+    # 转换文章名称为URL编码格式
+    query = quote_plus(article_name)
+    # 构建搜索URL
+    article_url = f"https://scholar.google.com/scholar?hl=zh-CN&as_sdt=0%2C5&q={query}"    
+    access_article(driver, article_url)
+    results = {}
+    article_count = 1
+    parse_articles(driver, results, article_count)
+    with open('cited_articles.json', 'w') as f:
+        json.dump(results, f, indent=4)
     driver.quit()
 
 if __name__ == "__main__":
