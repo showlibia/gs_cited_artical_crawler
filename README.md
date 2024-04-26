@@ -16,7 +16,7 @@ This Python-based web scraper is designed to retrieve citation information from 
 
 - Platform:Windows
 
-- [chromedriver](https://googlechromelabs.github.io/chrome-for-testing/)
+- [chromedriver](https://googlechromelabs.github.io/chrome-for-testing/)  (You can change the path of chromedriver in config.json)
 
 - Google Chrome
 

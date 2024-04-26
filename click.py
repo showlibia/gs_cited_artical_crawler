@@ -55,7 +55,6 @@ def close_citation_modal(driver):
         if clickable_area:
             # Use Selenium to click at the calculated coordinates
             driver.execute_script("arguments[0].click();", overlay)
-            print("Clicked outside the dialog to close the modal.")
         else:
             print("No clickable area outside the dialog was found.")
         

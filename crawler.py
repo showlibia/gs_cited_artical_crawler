@@ -28,8 +28,6 @@ def parse_articles(driver, results, article_count):
     soup = BeautifulSoup(html, 'html.parser')
     articles = soup.select('#gs_res_ccl_mid .gs_ri')
 
-    # print(f"Debug: article count: {len(articles)}")
-    # print(f"Debug: articles: {articles}")
 
     for article in articles:
         title = article.select_one('.gs_rt').text
@@ -49,6 +47,7 @@ def parse_articles(driver, results, article_count):
             print(f"Failed to extract citation: {e}")
             citation_text = "Citation extraction failed."
 
+        random_sleep(0.5,1.5)
         # Close the citation modal if needed
         close_citation_modal(driver)
 
@@ -67,7 +66,7 @@ def parse_articles(driver, results, article_count):
     if next_page_button:
         next_page_button.click()
         random_sleep(2, 5)  # 随机延时，模仿用户行为
-        parse_articles(results, article_count)
+        parse_articles(driver, results, article_count)
     else:
         print("Reached the last page or no next page button found.")
 
