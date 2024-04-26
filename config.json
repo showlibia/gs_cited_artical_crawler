@@ -1,5 +1,9 @@
 {
     "chromedriver": {
-        "path": "D:\\chromedriver-win64\\chromedriver.exe"
-    }
+        "path_win": "D:\\chromedriver-win64\\chromedriver.exe",
+        "path_mac": "/opt/homebrew/bin/chromedriver"
+    },
+    "url_head": [
+        "https://scholar.google.com/scholar?hl=zh-CN&as_sdt=0%2C5&q="
+    ]
 }

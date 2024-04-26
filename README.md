@@ -14,7 +14,7 @@ This Python-based web scraper is designed to retrieve citation information from 
 
 - Python 3.9 or higher
 
-- Platform:Windows
+- Platform: Windows, macOS
 
 - [chromedriver](https://googlechromelabs.github.io/chrome-for-testing/)  (You can change the path of chromedriver in config.json)
 
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 Run the scraper using the following command:
 
 ```bash
-python crawler.py "articalname"
+python crawler.py "article name"
 ```
 
 ## Output
@@ -49,7 +49,7 @@ The script will output a json file named `cited_articles.json` containing the fo
 
 - **Title:** Title of the citing article.
 
-- **Citation**:GB/T 7714 citation text
+- **Citation:** GB/T 7714 citation text
 
 - **Authors:** List of authors.
 
