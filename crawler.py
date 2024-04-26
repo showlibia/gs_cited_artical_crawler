@@ -9,9 +9,16 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 # 配置 WebDriver
-chrome_driver_path = "D:\chromedriver-win64\chromedriver.exe"
+import json
+
+with open('config.json') as f:
+    config = json.load(f)
+
+chrome_driver_path = config['chromedriver']['path']
+
 service = Service(executable_path=chrome_driver_path)
 driver = webdriver.Chrome(service=service)
 
@@ -20,6 +27,9 @@ def parse_articles(driver, results, article_count):
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
     articles = soup.select('#gs_res_ccl_mid .gs_ri')
+
+    # print(f"Debug: article count: {len(articles)}")
+    # print(f"Debug: articles: {articles}")
 
     for article in articles:
         title = article.select_one('.gs_rt').text
@@ -61,6 +71,19 @@ def parse_articles(driver, results, article_count):
     else:
         print("Reached the last page or no next page button found.")
 
+def check_captcha(driver):
+    """Check for the presence of a CAPTCHA and wait for the user to complete it."""
+    try:
+        # Check for the presence of a CAPTCHA element on the page
+        captcha_element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'gs_captcha_f')))
+
+        if captcha_element:
+            print("CAPTCHA detected. Please complete the CAPTCHA within 10 minutes.")
+            # Wait for up to 10 minutes for the CAPTCHA to be completed
+            WebDriverWait(driver, 600).until(EC.staleness_of(captcha_element))
+            print("CAPTCHA completed.")
+    except TimeoutException:
+        print("CAPTCHA was not completed within 10 minutes.")
 
 
 def main():
@@ -74,6 +97,11 @@ def main():
     # 构建搜索URL
     article_url = f"https://scholar.google.com/scholar?hl=zh-CN&as_sdt=0%2C5&q={query}"    
     access_article(driver, article_url)
+    # 检查是否有人机验证
+    check_captcha(driver)
+    # maximze the window
+    driver.maximize_window()
+    # 解析文章数据
     results = {}
     article_count = 1
     parse_articles(driver, results, article_count)
