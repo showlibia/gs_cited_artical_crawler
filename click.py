@@ -12,16 +12,23 @@ def random_sleep(minimum, maximum):
 
 
 def access_article(driver, article_url):
-    """访问指定的 Google Scholar 文章页面，并点击“Cited by”"""
-    # driver.get(article_url)
-    random_sleep(1, 2)
-    # 点击“被引用次数”
-    cited_by = driver.find_element(By.XPATH,'//div[@class="gs_ri"]/div[@class="gs_fl gs_flb"]/a[contains(text(), "被引用次数")]')
-    cited_by.click()
+  
+    """访问指定的 Google Scholar 文章页面，并点击“被引用次数”"""
+    try:
+        driver.get(article_url)
+        random_sleep(1, 2)
+        # 点击“被引用次数”
+        cited_by = driver.find_element(By.XPATH,'//div[@class="gs_ri"]/div[@class="gs_fl gs_flb"]/a[contains(text(), "被引用次数")]')
+        cited_by.click()
+        
 
-    # 等待页面加载
-    random_sleep(2, 5)
-
+        # 等待页面加载
+        random_sleep(2, 5)
+        return True, f"Access granted: {article_url}\n"
+    
+    except Exception as e:
+        return False, f"Access denied: {e}\n"
+        
 def find_next_page_button(driver):
     """尝试找到并返回‘下一页’按钮的 WebElement"""
     try:

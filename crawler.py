@@ -10,18 +10,34 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+import requests
 
 # 配置 WebDriver
-import json
-
 with open('config.json') as f:
     config = json.load(f)
 
-chrome_driver_path = config['chromedriver']['path']
-
+if sys.platform == 'win32':
+    chrome_driver_path = config['chromedriver']['path_win']
+elif sys.platform == 'darwin':
+    chrome_driver_path = config['chromedriver']['path_mac']
+    
+url_heads = config['url_head']
 service = Service(executable_path=chrome_driver_path)
 driver = webdriver.Chrome(service=service)
 
+def check_url(url):
+    try:
+        response = requests.get(url, timeout=5)  # 设置5秒超时
+        # 如果状态码在200到299之间，URL被认为是可访问的
+        if 200 <= response.status_code < 300:
+            return True, "URL is accessible."
+        else:
+            return False, f"URL returned a status code of {response.status_code}.\n"
+    
+    except requests.RequestException as e:
+        # 处理请求相关的错误
+        return False, f"An error occurred: {e}.\n"
+    
 def parse_articles(driver, results, article_count):
     """解析文章数据并保存"""
     html = driver.page_source
@@ -75,20 +91,24 @@ def parse_articles(driver, results, article_count):
 
 def main():
     if len(sys.argv) < 2:
-        print("No article name provided. Usage: script.py '<Article Name>'")
+        print(f"No article name provided. Usage: {sys.argv[0]} '<Article Name>'")
         return
     
     article_name = sys.argv[1]
     # 转换文章名称为URL编码格式
     query = quote_plus(article_name)
     # 构建搜索URL
-    article_url = f"https://scholar.google.com/scholar?hl=zh-CN&as_sdt=0%2C5&q={query}"    
-    driver.get(article_url)
-    # 检查是否有人机验证
-    # check_captcha(driver)
-    # check_captcha(driver)
 
-    access_article(driver, article_url)
+    for i in range(len(url_heads)):
+        print(query)
+        article_url = f"{url_heads[i]}{query}"
+        accessible, message = check_url(article_url)
+        if not accessible:
+            print(message)
+            continue
+
+    accessible, message = access_article(driver, article_url)
+
     # 检查是否有人机验证
     # check_captcha(driver)
     # maximze the window
