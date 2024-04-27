@@ -7,20 +7,22 @@ def extract_details(citation_text):
     """Extract the authors, publication platform, and year from the citation text."""
     try:
 
-        author_pattern = r'^([^,]+), ([^,]+), et al.'
-        title = re.search(r'\"(.+?)\"', citation_text)
-        platform_pattern = r"\.(.*?)\d+\.\d+"
+        author_pattern = r'^(.+?)(?:, et al\.|, and|\.)'
+        title_pattern = r'\"(.+?)\"'
+        platform_pattern = r'\"\.\s*(.+?)\s*\(\d{4}\)'
         year_pattern = r'\((\d{4})\)'
         
         authors_match = re.search(author_pattern, citation_text)
+        title_match = re.search(title_pattern, citation_text)
         platform_match = re.search(platform_pattern, citation_text)
         year_match = re.search(year_pattern, citation_text)
 
         authors = authors_match.group(1) if authors_match else "Authors not found"
+        title = title_match.group(1) if title_match else ""
         platform = platform_match.group(1) if platform_match else "Platform not found"
         year = year_match.group(1) if year_match else "Year not found"
 
-        platform = platform.replace(title, "").strip()
+        platform = platform.replace(f"\"{title}\"", "").strip()
 
         return authors, platform, year
     except Exception as e:

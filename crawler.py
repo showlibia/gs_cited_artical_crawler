@@ -1,5 +1,6 @@
 import sys
 import json
+import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from urllib.parse import quote_plus
@@ -7,7 +8,6 @@ from details import extract_citation_text
 from click import access_article, random_sleep, find_next_page_button, close_citation_modal, check_captcha, attempt_citation_click
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-import requests
 
 # 配置 WebDriver
 with open('config.json') as f:
@@ -97,7 +97,6 @@ def main():
     # 构建搜索URL
 
     for i in range(len(url_heads)):
-        print(query)
         article_url = f"{url_heads[i]}{query}"
         accessible, message = check_url(article_url)
         if not accessible:
@@ -107,7 +106,8 @@ def main():
     accessible, message = access_article(driver, article_url)
 
     # 检查是否有人机验证
-    # check_captcha(driver)
+    check_captcha(driver)
+
     # maximze the window
     driver.maximize_window()
     # 解析文章数据

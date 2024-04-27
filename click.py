@@ -73,30 +73,31 @@ def close_citation_modal(driver):
 def check_captcha(driver):
     """Check for the presence of a CAPTCHA and wait for the user to complete it."""
     try:
-        # Check for the presence of a CAPTCHA element on the page
-        captcha_element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, 'gs_captcha_f')))
-
+        captcha_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, 'recaptcha-anchor-label'))
+        )
+        
         if captcha_element:
-            print("CAPTCHA detected. Please complete the CAPTCHA within 10 minutes.")
-            # Wait for up to 10 minutes for the CAPTCHA to be completed
-            WebDriverWait(driver, 600).until(EC.staleness_of(captcha_element))
-            print("CAPTCHA completed.")
+            print("CAPTCHA detected. Please complete the CAPTCHA.")
+            input("After completing the CAPTCHA, press Enter to continue...")  
+            print("CAPTCHA completed, continuing operation...")
 
-            
     except TimeoutException:
-        print("CAPTCHA was not completed within 10 minutes.")
+        print("CAPTCHA check timed out.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 def attempt_citation_click(driver, cite_button):
     while True:
         try:
             # Check if the system error message is visible
-            alert_message = WebDriverWait(driver, 0.5).until(
-                EC.visibility_of_element_located((By.ID, "gs_alrt_m"))
+            alert_message = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.ID, "gs_alrt_m"))
+                # EC.presence_of_element_located((By.ID, "gs_alrt_m"))
             )
             if "系统目前无法执行此操作，请稍后再试。" in alert_message.text:
                 print("System error detected. Waiting for 2 minutes before retrying.")
                 time.sleep(120)  
-                # driver.refresh()  # Refresh the page
                 cite_button.click()
                 check_captcha(driver)
             else:
