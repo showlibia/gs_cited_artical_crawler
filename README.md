@@ -49,7 +49,7 @@ The script will output a json file named `cited_articles.json` containing the fo
 
 - **Title:** Title of the citing article.
 
-- **Citation**:GB/T 7714 citation text
+- **Citation**:MLA citation text
 
 - **Authors:** List of authors.
 
