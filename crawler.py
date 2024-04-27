@@ -7,9 +7,6 @@ from details import extract_citation_text
 from click import access_article, random_sleep, find_next_page_button, close_citation_modal, check_captcha, attempt_citation_click
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
 import requests
 
 # 配置 WebDriver
