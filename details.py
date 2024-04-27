@@ -3,26 +3,32 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-def extract_details(citation_text):
+def extract_details(citation_text: str):
     """Extract the authors, publication platform, and year from the citation text."""
     try:
+        title = re.search(r'\"(.+?)\"', citation_text)
+        year_pattern = r'(\d{4})'
+            
+        # Extracting authors
+        authors = ""
+        author_match = re.search(r'^([^"]+)\.', citation_text)
+        if author_match:
+            authors = author_match.group(1).strip()
+            # 如果存在 "et al."，则截断之前的部分
+            if "et al" in authors:
+                authors = authors[:authors.index(", et al")]
+                authors = authors.replace(", et al", "")
 
-        author_pattern = r'^(.+?)(?:, et al\.|, and|\.)'
-        title_pattern = r'\"(.+?)\"'
-        platform_pattern = r'\"\.\s*(.+?)\s*\(\d{4}\)'
-        year_pattern = r'\((\d{4})\)'
-        
-        authors_match = re.search(author_pattern, citation_text)
-        title_match = re.search(title_pattern, citation_text)
-        platform_match = re.search(platform_pattern, citation_text)
+        # Extracting year
+        year = ""
         year_match = re.search(year_pattern, citation_text)
-
-        authors = authors_match.group(1) if authors_match else "Authors not found"
-        title = title_match.group(1) if title_match else ""
-        platform = platform_match.group(1) if platform_match else "Platform not found"
-        year = year_match.group(1) if year_match else "Year not found"
-
-        platform = platform.replace(f"\"{title}\"", "").strip()
+        if year_match:
+            year = year_match.group(1)
+            
+        # Extracting platform
+        platform = ""
+        platform = citation_text.replace(f"{author_match.group()} {title.group()}", "").strip()
+        platform = platform.replace(f"{title.group()}", "").strip()
 
         return authors, platform, year
     except Exception as e:
@@ -49,3 +55,16 @@ def extract_citation_text(driver):
         return "Citation extraction failed.", None, None, None
 
     return citation_text, authors, platform, year
+
+if __name__ == "__main__":
+    import json
+    with open("cited_articles.json", "r") as f:
+        data = json.load(f)
+        
+    for article in data:
+        # print(data[article]["citation"])
+        authors, platform, year = extract_details(data[article]["citation"])
+        print(authors)
+        print(platform)
+        print(year)
+        print()
