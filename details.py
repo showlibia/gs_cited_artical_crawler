@@ -1,7 +1,37 @@
 import re
+import requests
+import json
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+def check_url(url):
+    try:
+        response = requests.get(url, timeout=5)  # 设置5秒超时
+        # 如果状态码在200到299之间，URL被认为是可访问的
+        if 200 <= response.status_code < 300:
+            return True, "URL is accessible."
+        else:
+            return False, f"URL returned a status code of {response.status_code}.\n"
+    
+    except requests.RequestException as e:
+        # 处理请求相关的错误
+        return False, f"An error occurred: {e}.\n"
+    
+def update_json_file(results: dict):
+    existing_data = {}
+    try:
+        with open('cited_articles.json', 'r') as f:
+            existing_data = json.load(f)
+    except FileNotFoundError:
+        print("File not found. Creating a new one.")
+    except json.JSONDecodeError:
+        print("JSON decode error. Creating a new file.")
+
+    # 合并数据
+    existing_data.update(results)
+
+    return existing_data
 
 def extract_details(citation_text: str):
     """Extract the authors, publication platform, and year from the citation text."""
@@ -56,15 +86,3 @@ def extract_citation_text(driver):
 
     return citation_text, authors, platform, year
 
-if __name__ == "__main__":
-    import json
-    with open("cited_articles.json", "r") as f:
-        data = json.load(f)
-        
-    for article in data:
-        # print(data[article]["citation"])
-        authors, platform, year = extract_details(data[article]["citation"])
-        print(authors)
-        print(platform)
-        print(year)
-        print()

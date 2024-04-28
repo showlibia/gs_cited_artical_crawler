@@ -40,12 +40,18 @@ pip install -r requirements.txt
 Run the scraper using the following command:
 
 ```bash
-python crawler.py "article name"
+python run_crawler.py "article name" citated_number
 ```
+
+**Note:**
+
+To counteract Google Scholar's anti-scraping mechanisms, this program divides the process of scraping citation information into multiple stages. 
+
+**For operations that may encounter errors, please refer to the `check_captcha` function in the `click.py` file.**
 
 ## Output
 
-The script will output a json file named `cited_articles.json` containing the following columns:
+The script will output a json file named `artical_name.json` containing the following columns:
 
 - **Title:** Title of the citing article.
 

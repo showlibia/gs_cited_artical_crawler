@@ -1,9 +1,9 @@
 import time
 import random
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 
 def random_sleep(minimum, maximum):
@@ -70,15 +70,26 @@ def close_citation_modal(driver):
     except Exception as e:
         print(f"Failed to close citation modal by clicking outside the dialog: {e}")
 
+
 def check_captcha(driver):
     """Check for the presence of a CAPTCHA and wait for the user to complete it."""
+
     try:
+        # get_captcha_entry_iframe
+        captcha_entry_iframe = driver.find_element(By.CSS_SELECTOR,'iframe[title="reCAPTCHA"]')
+
+        # switch_to_captcha_entry_iframe
+        driver.switch_to.frame(captcha_entry_iframe)
+
         captcha_element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, 'recaptcha-anchor-label'))
+            EC.presence_of_element_located((By.ID, 'recaptcha-anchor'))
         )
         
         if captcha_element:
-            print("CAPTCHA detected. Please complete the CAPTCHA.")
+            print("CAPTCHA detected.")
+            print("Don't click the captcha-checkbox, the program will handle it automatically.")
+            captcha_element.click()
+            print(" Please complete the CAPTCHA.")
             input("After completing the CAPTCHA, press Enter to continue...")  
             print("CAPTCHA completed, continuing operation...")
 
@@ -90,19 +101,26 @@ def check_captcha(driver):
 def attempt_citation_click(driver, cite_button):
     while True:
         try:
-            # Check if the system error message is visible
+            # 使用 WebDriverWait 检测错误信息的出现
             alert_message = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.ID, "gs_alrt_m"))
-                # EC.presence_of_element_located((By.ID, "gs_alrt_m"))
+                EC.visibility_of_element_located((By.ID, "gs_alrt_m"))
             )
             if "系统目前无法执行此操作，请稍后再试。" in alert_message.text:
                 print("System error detected. Waiting for 2 minutes before retrying.")
-                time.sleep(120)  
-                cite_button.click()
-                check_captcha(driver)
+                time.sleep(120)  # 等待两分钟
+                driver.delete_all_cookies()  # 清除所有cookies
+                driver.refresh()  # 刷新页面
+                WebDriverWait(driver, 2).until(EC.element_to_be_clickable(cite_button)).click()
+                check_captcha(driver)  # 检查验证码
             else:
-                break  # If no error, break the loop
+                break  # 如果没有错误信息，跳出循环
 
         except TimeoutException:
             print("Failed to perform the operation within the expected time.")
+            break
+        except NoSuchElementException:
+            print("No system error message present.")
+            break
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
             break

@@ -1,11 +1,13 @@
 import sys
 import json
-import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from urllib.parse import quote_plus
-from details import extract_citation_text
-from click import access_article, random_sleep, find_next_page_button, close_citation_modal, check_captcha, attempt_citation_click
+from urllib.parse import quote_plus, urlparse, parse_qs
+from details import extract_citation_text, check_url, update_json_file
+from click import (
+    access_article, random_sleep, find_next_page_button, close_citation_modal, 
+    check_captcha, attempt_citation_click
+    )
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
@@ -22,21 +24,25 @@ url_heads = config['url_head']
 service = Service(executable_path=chrome_driver_path)
 driver = webdriver.Chrome(service=service)
 
-def check_url(url):
-    try:
-        response = requests.get(url, timeout=5)  # 设置5秒超时
-        # 如果状态码在200到299之间，URL被认为是可访问的
-        if 200 <= response.status_code < 300:
-            return True, "URL is accessible."
-        else:
-            return False, f"URL returned a status code of {response.status_code}.\n"
-    
-    except requests.RequestException as e:
-        # 处理请求相关的错误
-        return False, f"An error occurred: {e}.\n"
-    
-def parse_articles(driver, results, article_count):
+
+def parse_articles(driver, results, article_count, start_page, end_page):
     """解析文章数据并保存"""
+    current_url = driver.current_url
+    parsed_url = urlparse(current_url)
+    query_params = parse_qs(parsed_url.query)
+
+    # 提取start参数，转换为整数
+    start = int(query_params.get('start', [0])[0])
+
+    if start < (start_page - 1) * 10:
+        current_url = current_url + f"&start={start_page * 10}"
+        driver.get(current_url)
+        random_sleep(1, 2)
+
+    if start >= end_page * 10:
+        return
+
+
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
     articles = soup.select('#gs_res_ccl_mid .gs_r.gs_or.gs_scl')
@@ -82,16 +88,19 @@ def parse_articles(driver, results, article_count):
     if next_page_button:
         next_page_button.click()
         random_sleep(1.5, 3)  # 随机延时，模仿用户行为
-        parse_articles(driver, results, article_count)
+        parse_articles(driver, results, article_count, start_page, end_page)
     else:
         print("Reached the last page or no next page button found.")
 
 def main():
-    if len(sys.argv) < 2:
-        print(f"No article name provided. Usage: {sys.argv[0]} '<Article Name>'")
+    if len(sys.argv) < 4:
+        print(f"Usage: {sys.argv[0]} '<Article Name>' <startpage> <endpage>")
         return
-    
+
     article_name = sys.argv[1]
+    start_page = int(sys.argv[2])
+    end_page = int(sys.argv[3])
+
     # 转换文章名称为URL编码格式
     query = quote_plus(article_name)
     # 构建搜索URL
@@ -112,10 +121,15 @@ def main():
     driver.maximize_window()
     # 解析文章数据
     results = {}
-    article_count = 1
-    parse_articles(driver, results, article_count)
-    with open('cited_articles.json', 'w') as f:
-        json.dump(results, f, indent=4)
+    article_count = (start_page - 1) * 10 + 1
+    parse_articles(driver, results, article_count, start_page, end_page)
+    
+    existing_data = update_json_file(results)
+
+    # 写回文件
+    with open(f'{article_name}.json', 'w') as f:
+        json.dump(existing_data, f, indent=4)
+
     driver.quit()
 
 if __name__ == "__main__":
