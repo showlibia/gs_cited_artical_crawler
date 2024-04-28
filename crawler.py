@@ -124,7 +124,7 @@ def main():
     article_count = (start_page - 1) * 10 + 1
     parse_articles(driver, results, article_count, start_page, end_page)
     
-    existing_data = update_json_file(results)
+    existing_data = update_json_file(results, article_name)
 
     # 写回文件
     with open(f'{article_name}.json', 'w') as f:

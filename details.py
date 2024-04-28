@@ -18,10 +18,10 @@ def check_url(url):
         # 处理请求相关的错误
         return False, f"An error occurred: {e}.\n"
     
-def update_json_file(results: dict):
+def update_json_file(results: dict, article_name: str):
     existing_data = {}
     try:
-        with open('cited_articles.json', 'r') as f:
+        with open(f'{article_name}.json', 'r') as f:
             existing_data = json.load(f)
     except FileNotFoundError:
         print("File not found. Creating a new one.")
@@ -69,7 +69,7 @@ def extract_citation_text(driver):
     """Wait for and extract MLA citation text from the modal."""
     try:
         # Wait for the modal to become visible
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.ID, 'gs_citd'))
         )
 

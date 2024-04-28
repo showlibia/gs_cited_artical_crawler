@@ -15,7 +15,7 @@ def run_spider(article_name, total_cited_number, pages_per_batch=15):
 
     start_page = 1
     while start_page <= total_pages:
-        end_page = min(start_page + pages_per_batch - 1, total_pages)
+        end_page = min(start_page + pages_per_batch, total_pages)
         print(f"Processing from page {start_page} to {end_page}...")
         
         # 构建命令行参数
